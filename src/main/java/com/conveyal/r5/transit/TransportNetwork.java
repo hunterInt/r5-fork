@@ -249,6 +249,38 @@ public class TransportNetwork implements Serializable {
     }
 
     /**
+     * Export this TransportNetwork to a binary file for later reuse.
+     * This allows saving the processed network to avoid rebuilds.
+     * 
+     * @param outputFile Path where the exported bundle should be saved
+     * @throws IOException if file operations fail
+     */
+    public void exportToFile(String outputFile) throws IOException {
+        File file = new File(outputFile);
+        try {
+            KryoNetworkSerializer.write(this, file);
+        } catch (Exception e) {
+            throw new IOException("Failed to export TransportNetwork to file: " + outputFile, e);
+        }
+    }
+
+    /**
+     * Load a TransportNetwork from a previously exported bundle file.
+     * 
+     * @param bundleFile Path to the exported bundle file
+     * @return The loaded TransportNetwork
+     * @throws IOException if file operations fail
+     */
+    public static TransportNetwork loadFromFile(String bundleFile) throws IOException {
+        File file = new File(bundleFile);
+        try {
+            return KryoNetworkSerializer.read(file);
+        } catch (Exception e) {
+            throw new IOException("Failed to load TransportNetwork from file: " + bundleFile, e);
+        }
+    }
+
+    /**
      * Opens OSM MapDB database if it exists
      * Otherwise it prints a warning
      *
