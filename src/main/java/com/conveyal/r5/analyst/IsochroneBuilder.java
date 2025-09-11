@@ -1,3 +1,4 @@
+// com/conveyal/r5/analyst/IsochroneBuilder.java
 package com.conveyal.r5.analyst;
 
 import org.locationtech.jts.geom.*;
@@ -43,7 +44,8 @@ public final class IsochroneBuilder {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 int idx = y * width + x;
-                if (idx < times.length && times[idx] <= cutoff && times[idx] > 0) {
+                int t = times[idx];
+                if (t != Integer.MAX_VALUE && t >= 0 && t <= cutoff) {
                     mask[y][x] = true;
                     hasReachableCells = true;
                 }
