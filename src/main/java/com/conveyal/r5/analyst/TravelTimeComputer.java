@@ -5,6 +5,7 @@ import com.conveyal.r5.OneOriginResult;
 import com.conveyal.r5.analyst.cluster.AnalysisWorkerTask;
 import com.conveyal.r5.analyst.cluster.PathWriter;
 import com.conveyal.r5.analyst.cluster.RegionalTask;
+import com.conveyal.r5.analyst.cluster.TravelTimeSurfaceTask;
 import com.conveyal.r5.analyst.fare.InRoutingFareCalculator;
 import com.conveyal.r5.analyst.scenario.PickupWaitTimes;
 import com.conveyal.r5.api.util.LegMode;
@@ -399,8 +400,8 @@ public class TravelTimeComputer {
     
     private static AnalysisWorkerTask createBasicTask(ProfileRequest request, WebMercatorExtents extents) {
         // Create a minimal task that works with existing infrastructure
-        // This is a simplified implementation
-        AnalysisWorkerTask task = new AnalysisWorkerTask() {
+        // This is a simplified implementation - extends TravelTimeSurfaceTask to avoid casting issues in TravelTimeReducer
+        TravelTimeSurfaceTask task = new TravelTimeSurfaceTask() {
             {
                 fromLat = request.fromLat;
                 fromLon = request.fromLon;
@@ -418,21 +419,6 @@ public class TravelTimeComputer {
                 height = extents.height;
                 zoom = extents.zoom;
                 percentiles = new int[]{50}; // Just median
-            }
-            
-            @Override
-            public Type getType() {
-                return Type.TRAVEL_TIME_SURFACE;
-            }
-            
-            @Override
-            public WebMercatorExtents getWebMercatorExtents() {
-                return extents;
-            }
-            
-            @Override
-            public int nTargetsPerOrigin() {
-                return width * height; // Number of grid cells
             }
         };
         return task;
