@@ -261,6 +261,8 @@ dependencies {
     // Compressed bitmaps (bitsets) used to track which long OSM IDs have been encountered.
     implementation 'org.roaringbitmap:RoaringBitmap:0.7.3'
 
+    implementation "org.locationtech.jts:jts-core:1.19.0"
+
     ////// Test-only dependencies //////
 
     // Java unit testing framework.

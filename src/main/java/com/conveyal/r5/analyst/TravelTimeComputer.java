@@ -1,5 +1,6 @@
 package com.conveyal.r5.analyst;
 
+import java.util.Arrays;
 import com.conveyal.r5.OneOriginResult;
 import com.conveyal.r5.analyst.cluster.AnalysisWorkerTask;
 import com.conveyal.r5.analyst.cluster.PathWriter;
@@ -19,6 +20,8 @@ import com.conveyal.r5.streets.PointSetTimes;
 import com.conveyal.r5.streets.Split;
 import com.conveyal.r5.streets.StreetRouter;
 import com.conveyal.r5.transit.TransportNetwork;
+import com.conveyal.r5.profile.ProfileRequest;
+import com.conveyal.r5.analyst.WebMercatorGridPointSet;
 import com.conveyal.r5.transit.path.Path;
 import gnu.trove.map.TIntIntMap;
 import org.slf4j.Logger;
@@ -355,6 +358,111 @@ public class TravelTimeComputer {
 
         return perTargetPropagater.propagate();
 
+    }
+
+      /**
+     * Build a WebMercator grid around the request origin, compute travel times (seconds),
+     * and return a contourable TravelTimeSurface.
+     */
+    public static TravelTimeSurface computeTravelTimeSurface(TransportNetwork network,
+                                                             ProfileRequest request,
+                                                             int zoom, // e.g. 9..12
+                                                             int width, // cells
+                                                             int height // cells
+    ) {
+        // 1) Derive grid extents centered at origin
+        WebMercatorExtents ext = WebMercatorExtents.forPoint(
+                request.fromLon, request.fromLat, zoom, width, height
+        );
+        
+        // 2) Create a simple task-like object to use existing TravelTimeComputer
+        // We'll use the existing computeTravelTimes method but need to set up destinations
+        WebMercatorGridPointSet destinations = new WebMercatorGridPointSet(ext);
+        
+        // 3) Create a basic AnalysisWorkerTask from ProfileRequest
+        // This is a simplified approach - in practice you might need a proper task
+        AnalysisWorkerTask task = createBasicTask(request, ext);
+        
+        // 4) Use existing machinery to compute travel times
+        TravelTimeComputer computer = new TravelTimeComputer(task, network);
+        OneOriginResult result = computer.computeTravelTimes();
+        
+        // 5) Extract travel times from result and convert to simple int array
+        int[] timesSec = extractTravelTimes(result, width * height);
+        
+        // 6) Wrap in a Grid for georeferencing
+        Grid grid = new Grid(ext);
+        
+        return new TravelTimeSurface(grid, timesSec);
+    }
+    
+    private static AnalysisWorkerTask createBasicTask(ProfileRequest request, WebMercatorExtents extents) {
+        // Create a minimal task that works with existing infrastructure
+        // This is a simplified implementation
+        AnalysisWorkerTask task = new AnalysisWorkerTask() {
+            {
+                fromLat = request.fromLat;
+                fromLon = request.fromLon;
+                accessModes = request.accessModes;
+                egressModes = request.egressModes;
+                directModes = request.directModes;
+                transitModes = request.transitModes;
+                walkSpeed = request.walkSpeed;
+                bikeSpeed = request.bikeSpeed;
+                carSpeed = request.carSpeed;
+                maxTripDurationMinutes = request.maxTripDurationMinutes;
+                west = extents.west;
+                north = extents.north;
+                width = extents.width;
+                height = extents.height;
+                zoom = extents.zoom;
+                percentiles = new int[]{50}; // Just median
+            }
+            
+            @Override
+            public Type getType() {
+                return Type.TRAVEL_TIME_SURFACE;
+            }
+            
+            @Override
+            public WebMercatorExtents getWebMercatorExtents() {
+                return extents;
+            }
+            
+            @Override
+            public int nTargetsPerOrigin() {
+                return width * height; // Number of grid cells
+            }
+        };
+        return task;
+    }
+    
+    private static int[] extractTravelTimes(OneOriginResult result, int size) {
+        int[] times = new int[size];
+        
+        int[][] values = result.travelTimes != null ? result.travelTimes.getValues() : null;
+        if (values != null && values.length > 0) {
+            // Extract median percentile (index 0 since we only computed one percentile)
+            int[] travelTimesMinutes = values[0];
+            
+            for (int i = 0; i < Math.min(size, travelTimesMinutes.length); i++) {
+                if (travelTimesMinutes[i] == FastRaptorWorker.UNREACHED) {
+                    times[i] = Integer.MAX_VALUE; // Mark as unreachable
+                } else {
+                    times[i] = travelTimesMinutes[i] * 60; // Convert minutes to seconds
+                }
+            }
+            
+            // Fill remaining slots as unreachable if travelTimes array is shorter
+            for (int i = travelTimesMinutes.length; i < size; i++) {
+                times[i] = Integer.MAX_VALUE;
+            }
+        } else {
+            // No travel times computed, mark all as unreachable
+            Arrays.fill(times, Integer.MAX_VALUE);
+        }
+        
+        return times;
     }
 
 }

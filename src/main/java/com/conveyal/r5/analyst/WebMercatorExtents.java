@@ -209,6 +209,27 @@ public class WebMercatorExtents implements Serializable {
     }
 
     /**
+     * Create a WebMercatorExtents centered on a point with specified dimensions.
+     * @param lon longitude of center point
+     * @param lat latitude of center point  
+     * @param zoom web mercator zoom level
+     * @param width width in pixels
+     * @param height height in pixels
+     * @return WebMercatorExtents centered on the point
+     */
+    public static WebMercatorExtents forPoint(double lon, double lat, int zoom, int width, int height) {
+        // Convert center point to pixel coordinates
+        int centerX = lonToPixel(lon, zoom);
+        int centerY = latToPixel(lat, zoom);
+        
+        // Calculate west and north corners
+        int west = centerX - width / 2;
+        int north = centerY - height / 2;
+        
+        return new WebMercatorExtents(west, north, width, height, zoom);
+    }
+
+    /**
      * Produces a new Envelope in WGS84 coordinates that tightly encloses the pixels of this WebMercatorExtents.
      * The edges of that Envelope will run exactly down the borders between neighboring web Mercator pixels.
      */
