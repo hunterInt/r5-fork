@@ -21,6 +21,7 @@ import com.conveyal.r5.streets.Split;
 import com.conveyal.r5.streets.StreetRouter;
 import com.conveyal.r5.transit.TransportNetwork;
 import com.conveyal.r5.profile.ProfileRequest;
+import com.conveyal.r5.analyst.Grid;
 import com.conveyal.r5.analyst.WebMercatorGridPointSet;
 import com.conveyal.r5.transit.path.Path;
 import gnu.trove.map.TIntIntMap;
