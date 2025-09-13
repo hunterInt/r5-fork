@@ -381,18 +381,24 @@ public class TravelTimeComputer {
         // We'll use the existing computeTravelTimes method but need to set up destinations
         WebMercatorGridPointSet destinations = new WebMercatorGridPointSet(ext);
         
-        // 3) Create a basic AnalysisWorkerTask from ProfileRequest
+        // 3) Ensure distance tables are built (required for egress cost calculations)
+        if (network.transitLayer.stopToVertexDistanceTables == null) {
+            LOG.info("Building stop-to-vertex distance tables for analysis...");
+            network.transitLayer.buildDistanceTables(null);
+        }
+        
+        // 4) Create a basic AnalysisWorkerTask from ProfileRequest
         // This is a simplified approach - in practice you might need a proper task
         AnalysisWorkerTask task = createBasicTask(request, ext);
         
-        // 4) Use existing machinery to compute travel times
+        // 5) Use existing machinery to compute travel times
         TravelTimeComputer computer = new TravelTimeComputer(task, network);
         OneOriginResult result = computer.computeTravelTimes();
         
-        // 5) Extract travel times from result and convert to simple int array
+        // 6) Extract travel times from result and convert to simple int array
         int[] timesSec = extractTravelTimes(result, width * height);
         
-        // 6) Wrap in a Grid for georeferencing
+        // 7) Wrap in a Grid for georeferencing
         Grid grid = new Grid(ext);
         
         return new TravelTimeSurface(grid, timesSec);
