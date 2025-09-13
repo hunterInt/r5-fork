@@ -413,6 +413,10 @@ public class TravelTimeComputer {
                 bikeSpeed = request.bikeSpeed;
                 carSpeed = request.carSpeed;
                 maxTripDurationMinutes = request.maxTripDurationMinutes;
+                date = request.date;  // Critical: copy the date to avoid NullPointerException
+                fromTime = request.fromTime;
+                toTime = request.toTime;
+                zoneId = request.zoneId;  // Important for timezone-aware date/time handling
                 west = extents.west;
                 north = extents.north;
                 width = extents.width;
