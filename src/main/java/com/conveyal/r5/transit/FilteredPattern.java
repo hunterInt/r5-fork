@@ -55,9 +55,14 @@ public class FilteredPattern {
         }
     }
 
+    // We edited this 
     private static boolean overtakes (TripSchedule a, TripSchedule b) {
-        for (int s = 0; s < a.departures.length; s++) {
-            if (a.departures[s] > b.departures[s]) return true;
+        if (a == null || b == null || a.departures == null || b.departures == null) return false;
+        int n = Math.min(a.departures.length, b.departures.length);
+        for (int s = 0; s < n; s++) {
+            int ad = a.departures[s], bd = b.departures[s];
+            if (ad < 0 || bd < 0) continue;
+            if (ad > bd) return true;
         }
         return false;
     }
