@@ -124,18 +124,25 @@ public class TransportNetwork implements Serializable {
         osm.readFromFile(osmSourceFile);
         // Supply feeds with a stream so they do not sit open in memory while other feeds are being processed.
         Stream<GTFSFeed> feeds = gtfsSourceFiles.stream().map(GTFSFeed::readOnlyTempFileFromGtfs);
+        TransportNetwork network;
         if (configFile == null) {
-            return fromInputs(osm, feeds);
+            network = fromInputs(osm, feeds); 
         } else {
             try {
                 // Use lenient mapper to mimic behavior in objectFromRequestBody.
-                TransportNetworkConfig config = JsonUtilities.lenientObjectMapper.readValue(configFile,
-                        TransportNetworkConfig.class);
-                return fromInputs(osm, feeds, config);
+                TransportNetworkConfig config = JsonUtilities.lenientObjectMapper.readValue(new File(configFile), TransportNetworkConfig.class);
+                network = fromInputs(osm, feeds, config);
             } catch (IOException e) {
                 throw new RuntimeException("Error reading TransportNetworkConfig. Does it contain new unrecognized fields?", e);
             }
         }
+        
+        LOG.warn("DEBUG#A before any pruning: routes={}, patterns={}, stops={}",
+            network.transitLayer.routes.size(),
+            network.transitLayer.tripPatterns.size(),
+            network.transitLayer.stopCount());
+        
+        return network;
     }
 
     public static TransportNetwork fromInputs (OSM osm, Stream<GTFSFeed> gtfsFeeds) {

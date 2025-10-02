@@ -212,6 +212,9 @@ public class TransitLayer implements Serializable, Cloneable {
             throw new DuplicateFeedException(gtfs.feedId);
         }
 
+        LOG.warn("DEBUG#GTFS_START loading feed {}: routes_before={}, patterns_before={}, gtfs.routes={}, gtfs.trips={}",
+            gtfs.feedId, routes.size(), tripPatterns.size(), gtfs.routes.size(), gtfs.trips.size());
+
         // checksum feed and add to checksum cache
         feedChecksums.put(gtfs.feedId, gtfs.checksum);
 

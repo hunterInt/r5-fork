@@ -41,6 +41,13 @@ public class RemoveTrips extends Modification {
     @Override
     public boolean apply(TransportNetwork network) {
         TransitLayer transitLayer = network.transitLayer;
+        
+        LOG.warn("DEBUG#REMOVE_TRIPS_START: routes_before={}, patterns_before={}, removing_routes={}, removing_patterns={}, removing_trips={}",
+            transitLayer.routes.size(), transitLayer.tripPatterns.size(), 
+            routes != null ? routes.size() : 0, 
+            patterns != null ? patterns.size() : 0, 
+            trips != null ? trips.size() : 0);
+        
         int nPatternsBefore = transitLayer.tripPatterns.size();
         if (routes != null) {
             // Remove entire routes, not specific trips.
@@ -59,6 +66,10 @@ public class RemoveTrips extends Modification {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
         }
+        
+        LOG.warn("DEBUG#REMOVE_TRIPS_END: routes_after={}, patterns_after={}, patterns_affected={}",
+            transitLayer.routes.size(), transitLayer.tripPatterns.size(), nPatternsAffected);
+        
         int nPatternsRemoved = nPatternsBefore - transitLayer.tripPatterns.size();
         LOG.info("Removed {} entire patterns. Removed {} individual trips specified by ID.", nPatternsRemoved, nTripsRemoved);
         if (nTripsRemoved == 0 && nPatternsRemoved == 0) {

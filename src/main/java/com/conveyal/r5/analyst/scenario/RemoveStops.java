@@ -86,10 +86,17 @@ public class RemoveStops extends Modification {
 
     @Override
     public boolean apply(TransportNetwork network) {
+        LOG.warn("DEBUG#REMOVE_STOPS_START: routes_before={}, patterns_before={}, removing_stops={}",
+            network.transitLayer.routes.size(), network.transitLayer.tripPatterns.size(), stops != null ? stops.size() : 0);
+
         network.transitLayer.tripPatterns = network.transitLayer.tripPatterns.stream()
                 .map(p -> this.processTripPattern(p, network))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+
+        LOG.warn("DEBUG#REMOVE_STOPS_END: routes_after={}, patterns_after={}, patterns_affected={}",
+            network.transitLayer.routes.size(), network.transitLayer.tripPatterns.size(), nPatternsAffected);
+
         if (nPatternsAffected > 0) {
             LOG.info("Stops were removed from {} patterns.", nPatternsAffected);
         } else {
