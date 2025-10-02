@@ -140,7 +140,7 @@ public class TransportNetwork implements Serializable {
         LOG.warn("DEBUG#A before any pruning: routes={}, patterns={}, stops={}",
             network.transitLayer.routes.size(),
             network.transitLayer.tripPatterns.size(),
-            network.transitLayer.stopCount());
+            network.transitLayer.getStopCount());
         
         return network;
     }

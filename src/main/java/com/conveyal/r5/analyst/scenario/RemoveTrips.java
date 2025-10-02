@@ -67,10 +67,9 @@ public class RemoveTrips extends Modification {
                     .collect(Collectors.toList());
         }
         
-        LOG.warn("DEBUG#REMOVE_TRIPS_END: routes_after={}, patterns_after={}, patterns_affected={}",
-            transitLayer.routes.size(), transitLayer.tripPatterns.size(), nPatternsAffected);
-        
         int nPatternsRemoved = nPatternsBefore - transitLayer.tripPatterns.size();
+        LOG.warn("DEBUG#REMOVE_TRIPS_END: routes_after={}, patterns_after={}, patterns_removed={}",
+            transitLayer.routes.size(), transitLayer.tripPatterns.size(), nPatternsRemoved);
         LOG.info("Removed {} entire patterns. Removed {} individual trips specified by ID.", nPatternsRemoved, nTripsRemoved);
         if (nTripsRemoved == 0 && nPatternsRemoved == 0) {
             addError("No trips were removed.");
