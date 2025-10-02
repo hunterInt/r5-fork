@@ -23,6 +23,7 @@ import com.conveyal.gtfs.model.Trip;
 import com.conveyal.gtfs.validator.model.Priority;
 import com.conveyal.gtfs.validator.service.GeoUtils;
 import com.conveyal.r5.analyst.progress.ProgressListener;
+import com.conveyal.gtfs.GTFSDiagnostics;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -250,8 +251,6 @@ public class GTFSFeed implements Cloneable, Closeable {
         new Trip.Loader(this).loadTable(zip);
         new Frequency.Loader(this).loadTable(zip);
         new StopTime.Loader(this).loadTable(zip);
-        // Call the GTFS error histogram dump after stop_times loading completes
-        dumpGtfsErrorHistogram(this, LOG);
         zip.close();
 
         // There are conceivably cases where the extra step of identifying and naming patterns is not necessary.
@@ -261,6 +260,10 @@ public class GTFSFeed implements Cloneable, Closeable {
         // can cause pattern finding to fail hard with null pointer exceptions, causing detailed error messages to be
         // lost and hiding underlying problems from the user. If high-priority problems are present, the feed should be
         // presented to the user as unuseable anyway.
+        
+        // Dump GTFS error diagnostics after all tables are loaded but before finding patterns
+        GTFSDiagnostics.dumpErrors(this, LOG);
+        
         if (errors.stream().anyMatch(e -> e.getPriority() == Priority.HIGH)) {
             LOG.warn("Feed contains high priority errors, not finding patterns. It will be useless for routing.");
         } else {
@@ -270,62 +273,6 @@ public class GTFSFeed implements Cloneable, Closeable {
         // Prevent loading additional feeds into this MapDB.
         loaded = true;
         LOG.info("Detected {} errors in feed.", errors.size());
-    }
-
-        // Somewhere you have a GTFSFeed `feed` loaded:
-    // Edited
-    private static void dumpGtfsErrorHistogram(Object feed, org.slf4j.Logger LOG) {
-        try {
-            var fErrors = feed.getClass().getDeclaredField("errors");
-            fErrors.setAccessible(true);
-            Object store = fErrors.get(feed);
-            if (store == null) { LOG.warn("gtfs-lib: no error store"); return; }
-
-            // Try a few likely shapes to get a flat collection of error objects.
-            java.util.Collection<?> all = null;
-
-            // Try common accessor methods
-            for (String m : new String[]{"getAll", "getAllErrors", "list", "asList", "values"}) {
-                try {
-                    var mm = store.getClass().getMethod(m);
-                    Object out = mm.invoke(store);
-                    if (out instanceof java.util.Collection<?> c) { all = c; break; }
-                } catch (ReflectiveOperationException ignored) {}
-            }
-            // Try a field named "errors"
-            if (all == null) {
-                try {
-                    var f = store.getClass().getDeclaredField("errors");
-                    f.setAccessible(true);
-                    Object out = f.get(store);
-                    if (out instanceof java.util.Collection<?> c) all = c;
-                    else if (out instanceof java.util.Map<?,?> m) {
-                        java.util.ArrayList<Object> flat = new java.util.ArrayList<>();
-                        for (Object v : m.values()) {
-                            if (v instanceof java.util.Collection<?> c2) flat.addAll(c2);
-                        }
-                        all = flat;
-                    }
-                } catch (ReflectiveOperationException ignored) {}
-            }
-
-            if (all == null) {
-                LOG.warn("gtfs-lib: could not introspect error store class={}", store.getClass().getName());
-                return;
-            }
-
-            java.util.Map<String,Integer> counts = new java.util.HashMap<>();
-            for (Object e : all) {
-                String k = e.getClass().getSimpleName();
-                counts.merge(k, 1, Integer::sum);
-            }
-            var top = counts.entrySet().stream()
-                .sorted(java.util.Map.Entry.<String,Integer>comparingByValue().reversed())
-                .limit(30).toList();
-            LOG.warn("GTFS error histogram (top 30): {}", top);
-        } catch (Throwable t) {
-            LOG.warn("Could not dump gtfs-lib errors", t);
-        }
     }
 
     public void toFile (String file) {
