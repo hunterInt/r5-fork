@@ -514,11 +514,25 @@ public abstract class TraversalPermissionLabeler {
         }
 
         public static Label fromTag (String tag) {
-            //Some access tags are like designated;yes no idea why
-            if (tag.contains(";")) {
-                tag = tag.split(";")[0];
+            // Edited this below
+            if (tag == null) return UNKNOWN;
+
+            // Some access tags are like "designated;yes" (take the first token),
+            // but be defensive about weird/empty values.
+            tag = tag.trim();
+            if (tag.isEmpty()) return UNKNOWN;
+
+            int semi = tag.indexOf(';');
+            if (semi >= 0) {
+                // If semicolon is first char, token before it is empty -> treat as unknown.
+                if (semi == 0) return UNKNOWN;
+                tag = tag.substring(0, semi).trim();
+                if (tag.isEmpty()) return UNKNOWN;
             }
-            tag = tag.toLowerCase().trim();
+
+            tag = tag.toLowerCase();
+
+
             if (isTagTrue(tag) || "official".equals(tag)
                 || "unknown".equals(tag) || "public".equals(tag)
                 || "permissive".equals(tag) || "designated".equals(tag)
